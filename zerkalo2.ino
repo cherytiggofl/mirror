@@ -96,6 +96,9 @@ InitSensors();
 }
 
 
+/**
+ * 
+ */
 void InitSensors(){
     if (!bmp.begin()) {
  //Serial.println("Не найден BMP085 sau BMP180");
@@ -125,7 +128,10 @@ int PhotoSensorLight = analogRead(PIN_PHOTOSENSOR);
   }
 
 unsigned char PressureAndTemperatureShowMode = 0;
-//Получение значений давления и температуры внутри 
+/**
+ * Получение значений давления и температуры 
+ * и их отображение
+ */
 void PrintPressureAndTemperatureIn(){
    float temperature = bmp.readTemperature();
    float presiune = bmp.readSealevelPressure()/101.325; presiune = presiune * 0.760;
@@ -133,13 +139,14 @@ void PrintPressureAndTemperatureIn(){
    //Моргать по очереди то значение давления то температуры
    if( PressureAndTemperatureShowMode == 0)   DisplayPrepeareValue(1, int(presiune) );
    else DisplayPrepeareValue(1, int(temperature) );
-   PressureAndTemperatureShowMode = 1 - PressureAndTemperatureShowMode;
+   //переключение будет в главном цикле по времени PressureAndTemperatureShowMode = 1 - PressureAndTemperatureShowMode;
    
 } 
  
  
- 
- //Очистить индикатор
+ /**
+  * Очистить индикатор
+  */
 void DisplayClear(){
       digitalWrite(latchPin, LOW);
     shiftOut(dataPin, clockPin, LSBFIRST, 0);  
@@ -157,7 +164,7 @@ void DisplayClear(){
 
 unsigned char DispDigit[DispModuleCnt * DispDigitCnt];
 /**
-*Подготвить значение для отображения его на модуле отображения номер DispNo (1..DispModuleCnt)
+*Подготовить значение для отображения на модуле отображения с номером DispNo (1..DispModuleCnt)
 */
 void DisplayPrepeareValue(int DispNo, int Value0){
  /* 
@@ -218,7 +225,9 @@ Serial.println(")");
 }
 
 
-//Отобразить из буфера значения
+/**
+ * Обновить индикаторы текущими значениями
+ */
 void DisplayRefresh(){
   
     digitalWrite(latchPin, LOW);
@@ -230,8 +239,9 @@ void DisplayRefresh(){
 }
 
 
-
-//Получение значения внешней температуры
+/**
+ * Получение и отображение значения внешней температуры
+ */
 void PrintTemperatureOut( int temperature ){
  DisplayPrepeareValue(2,  temperature );
   return;
@@ -289,6 +299,16 @@ unsigned long RadioDataUpdate_max = 510;
 unsigned long PressureAndTemperatureIn_cur = 0;
 unsigned long PressureAndTemperatureIn_max = 500;
 
+
+//Время смены отображаемого параметра (на 1 индикатор м.б. несколько параметров, здесь, как часто переключение)
+unsigned long PressureAndTemperatureShowMode_cur = 0;
+unsigned long PressureAndTemperatureShowMode_max = 2000;
+
+
+
+/**
+ * Главный цикл
+ */
 void loop() {
   
   unsigned long currentMillis = millis();
@@ -297,12 +317,20 @@ void loop() {
   DisplayClear();
   DisplayRefresh();
   UpdateBackLight();
-    
+
+
+     if( currentMillis - PressureAndTemperatureShowMode_cur >= PressureAndTemperatureShowMode_max ){  
+     PressureAndTemperatureShowMode = 1 - PressureAndTemperatureShowMode;
+     PressureAndTemperatureShowMode_cur = currentMillis;
+   }  
+  
     
    if( currentMillis - RadioDataUpdate_cur >= RadioDataUpdate_max ){  
      RadioDataUpdate(); 
      RadioDataUpdate_cur = currentMillis;
    }  
+
+   
    
     if( currentMillis - PressureAndTemperatureIn_cur >= PressureAndTemperatureIn_max ){  
      PrintPressureAndTemperatureIn(); 
